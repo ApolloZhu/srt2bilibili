@@ -5,13 +5,15 @@
 # Created: 11/23/2014
 # srt2Bilibili is licensed under GNUv2 license
 '''
-srt2Bilibili 0.02.2 alpha
+srt2Bilibili 0.03
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
 https://github.com/cnbeining/srt2bilibili
 GNUv2 license
 '''
+
+VER = '0.03'
 
 import sys
 if sys.version_info < (3, 0):
@@ -28,60 +30,22 @@ except:
     sys.stderr.write('ERROR: Pysrt is required. Please check https://github.com/cnbeining/srt2bilibili#usage .\n')
     sys.exit(1)
 
-import os
-import random
-import urllib
 import logging
-import hashlib
 import time as time_old
 import getopt
-from xml.dom.minidom import parse, parseString
-import xml.dom.minidom
 from random import randint
-
-global APPKEY, SECRETKEY, VER, rnd, cid
-
-APPKEY = '85eb6835b0a1034e'
-SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.02.2 alpha'
-
-#----------------------------------------------------------------------
-def calc_sign(string):
-    """str/any->str
-    return MD5.
-    From: Biligrab, https://github.com/cnbeining/Biligrab
-    MIT License"""
-    return str(hashlib.md5(str(string).encode('utf-8')).hexdigest())
 
 #----------------------------------------------------------------------
 def find_cid_api(vid, p):
     """find cid and print video detail
-    str,int?,str->str
-    TODO: Use json.
-    From: Biligrab, https://github.com/cnbeining/Biligrab
-    MIT License"""
-    cid = 0
-    if str(p) is '0' or str(p) is '1':
-        str2Hash = 'appkey={APPKEY}&id={vid}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, sign = calc_sign(str2Hash))
-    else:
-        str2Hash = 'appkey={APPKEY}&id={vid}&page={p}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, p = p, SECRETKEY = SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p, sign = calc_sign(str2Hash))
-    logging.debug(biliurl)
-    logging.info('Fetching webpage...')
+    str,int->int"""
     try:
-        request = urllib.request.Request(biliurl, headers=BILIGRAB_HEADER)
-        response = urllib.request.urlopen(request)
-        data = response.read()
-        dom = parseString(data)
-        for node in dom.getElementsByTagName('cid'):
-            if node.parentNode.tagName == "info":
-                cid = node.toxml()[5:-6]
-                logging.info('cid is ' + cid)
-                break
-        return cid
-    except:  # If API failed
-        logging.warning('Cannot connect to API server! \nIf you think this is wrong, please open an issue at \nhttps://github.com/cnbeining/Biligrab/issues with *ALL* the screen output, \nas well as your IP address and basic system info.')
+        info = requests.get('http://www.bilibili.com/widget/getPageList?aid='+str(vid)).json()
+        logging.debug(info)
+        p = min((p < 1 and 1 or p), len(info))
+        return int(info[p - 1]["cid"])
+    except:
+        logging.warning("Failed to get cid")
         return 0
 
 #----------------------------------------------------------------------
@@ -106,20 +70,18 @@ def getdate():
     return time_old.strftime("%Y-%m-%d %X", time_old.localtime())
 
 #----------------------------------------------------------------------
-def post_one(message, rnd, cid, cookie, fontsize = 25, mode = 1, color = 16777215, playTime = 0, pool = 0, fake_ip = False):
+def post_one(message, rnd, cid, cookie, fontsize = 25, mode = 4, color = 16777215, playTime = 0, pool = 0, fake_ip = False):
     """
     PARS NOT THE PERFECT SAME AS A PAYLOAD!"""
-    headers = {'Origin': 'http://static.hdslb.com', 'X-Requested-With': 'ShockwaveFlash/15.0.0.223', 'Referer': 'http://static.hdslb.com/play.swf', 'User-Agent': BILIGRAB_UA, 'Host': 'interface.bilibili.com', 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': cookie}
+    headers = {'Origin': 'http://static.hdslb.com', 'X-Requested-With': 'ShockwaveFlash/15.0.0.223', 'Referer': 'http://static.hdslb.com/play.swf', 'User-Agent': BILIGRAB_UA, 'Host': 'interface.bilibili.com', 'Content-Type': 'application/x-www-form-urlencoded'}
     if fake_ip:
         FAKE_IP = ".".join(str(randint(1, 255)) for i in range(4))
         headers.update({'X-Forwarded-For' : FAKE_IP, 'Client-IP' : FAKE_IP})
     #print(headers)
     url = 'http://interface.bilibili.com/dmpost'
     try:
-        date = getdate()
-        payload = {'fontsize': int(fontsize), 'message': str(message), 'mode': int(mode), 'pool': pool, 'color': int(color), 'date': str(date), 'rnd': int(rnd), 'playTime': playTime, 'cid': int(cid)}
-        encoded_args = urllib.parse.urlencode(payload)
-        r = requests.post(url, data = encoded_args, headers = headers)
+        payload = {'fontsize': fontsize, 'message': message, 'mode': mode, 'pool': pool, 'color': color, 'date': getdate(), 'rnd': rnd, 'playTime': playTime, 'cid': cid}
+        r = requests.post(url, data = payload, headers = headers, cookies=cookie)
         #print(r.text)
         if int(r.text) <= 0:
             logging.warning('Line failed:')
@@ -131,7 +93,6 @@ def post_one(message, rnd, cid, cookie, fontsize = 25, mode = 1, color = 1677721
     except Exception as e:
         print('ERROR: Line failed: %s' % e)
         print('Payload:' + str(payload))
-        pass
 
 #----------------------------------------------------------------------
 def timestamp2sec(timestamp):
@@ -146,22 +107,20 @@ def read_cookie(cookiepath):
     Target now: Set the global header
     From: Biligrab, https://github.com/cnbeining/Biligrab
     MIT License"""
-    global BILIGRAB_HEADER
     try:
-        cookies_file = open(cookiepath, 'r')
-        cookies = cookies_file.readlines()
-        cookies_file.close()
-        # print(cookies)
-        return cookies
+        with open(cookiepath, 'r') as cookies_file:
+            cookies = cookies_file.readlines()
+            # print(cookies)
+            return cookies
     except:
         logging.warning('Cannot read cookie!')
         return ['']
 
 #----------------------------------------------------------------------
-def main(srt, fontsize, mode, color, cookie, aid, p = 1, cool = 0.1, pool = 0, fake_ip = False):
+def main(srt, fontsize, mode, color, cookie, aid, p = 1, cool = 3.5, pool = 0, fake_ip = False):
     """str,int,int,int,str,int,int,int,int->None"""
-    rnd = int(random.random() * 1000000000)
-    cid = int(find_cid_api(aid, p))
+    rnd = randint(0, 1000000000)
+    cid = find_cid_api(aid, p)
     subs = pysrt.open(srt)
     for sub in subs:
         #lasttime = timestamp2sec(sub.stop) - timestamp2sec(sub.start)
@@ -171,10 +130,10 @@ def main(srt, fontsize, mode, color, cookie, aid, p = 1, cool = 0.1, pool = 0, f
         if '\n' in message:
             for line in message.split('\n'):
                 post_one(line, rnd, cid, cookie, fontsize, mode, color, playtime, pool,fake_ip = fake_ip)
-                time_old.sleep(float(cool))
+                time_old.sleep(cool)
         else:
             post_one(message, rnd, cid, cookie, fontsize, mode, color, playtime, pool,fake_ip = fake_ip)
-            time_old.sleep(float(cool))
+            time_old.sleep(cool)
     print('INFO: DONE!')
 
 
@@ -201,7 +160,7 @@ def usage():
     
     Usage:
     
-    python3 srt2bilibili.py (-h) (-a 12345678) [-p 1] [-c ./bilicookies] (-s 1.srt) [-f 18] [-m 0] [-o 16711680] [-w 0.1] [-l 0] (-i)
+    python3 srt2bilibili.py (-h) (-a 12345678) [-p 1] [-c ./bilicookies] (-s 1.srt) [-f 25] [-m 4] [-o 16777215] [-w 3.5] [-l 0] (-i)
     
     -h: Default: None
         Print this usage file.
@@ -223,7 +182,7 @@ def usage():
         srt2bilibili will post multi danmakues for multi-line subtitle,
         since there's a ban on the use of \n.
         
-    -f Default: 18
+    -f Default: 25
         The size of danmaku.
         
     -m Default: 4
@@ -235,11 +194,11 @@ def usage():
         7: Special
         9: Advanced
         
-    -o Default: 16711680
-        The colour of danmaku, in integer.
-        Default is red.
+    -o Default: 16777215
+        The color of danmaku, in integer.
+        Default is white.
         
-    -w Default: 0.1
+    -w Default: 3.5
        The cool time (time to wait between posting danmakues)
        Do not set it too small, which would lead to ban or failure.
        
@@ -253,14 +212,14 @@ def usage():
     -i Default: False
         Use a fake IP address for every comment.
     
-    More info avalable at http://docs.bilibili.cn/wiki/API.comment  .
+    More info available at http://docs.bilibili.cn/wiki/API.comment.
     ''')
 
 #----------------------------------------------------------------------
 if __name__=='__main__':
     argv_list = []
     argv_list = sys.argv[1:]
-    aid, part, cookiepath, srt, fontsize, mode, color, cooltime, playtime, pool = 0, 1, './bilicookies', '', 18, 4, 16711680, 0.1, 0, 0
+    aid, part, cookiepath, srt, fontsize, mode, color, cooltime, playtime, pool, fake_ip = 0, 1, './bilicookies', '', 25, 4, 16777215, 3.5, 0, 0, False
     try:
         opts, args = getopt.getopt(argv_list, "ha:p:c:s:f:m:o:w:l:i",
                                    ['help', "av", 'part', 'cookie', 'srt', 'fontsize', 'mode', 'color', 'cooltime', 'pool', 'fake-ip'])
@@ -278,12 +237,11 @@ if __name__=='__main__':
             except:
                 break
         if o in ('-p', '--part'):
-            part = a
             try:
+                part = int(a)
                 argv_list.remove('-p')
             except:
                 part = 1
-                break
         if o in ('-c', '--cookie'):
             cookiepath = a
             try:
@@ -291,7 +249,6 @@ if __name__=='__main__':
             except:
                 print('INFO: No cookie path set, use default: ./bilicookies')
                 cookiepath = './bilicookies'
-                break
         if o in ('-s', '--srt'):
             srt = a
             try:
@@ -299,39 +256,35 @@ if __name__=='__main__':
             except:
                 break
         if o in ('-f', '--fontsize'):
-            fontsize = a
             try:
+                fontsize = int(a)
                 argv_list.remove('-f')
             except:
-                break
+                fontsize = 25
         if o in ('-m', '--mode'):
-            mode = a
             try:
+                mode = int(a)
                 argv_list.remove('-m')
             except:
-                mode = 1
-                break
+                mode = 4
         if o in ('-o', '--color'):
-            color = a
             try:
+                color = int(a)
                 argv_list.remove('-o')
             except:
-                color = 16711680
-                break
+                color = 16777215
         if o in ('-w', '--cooltime'):
-            cooltime = a
             try:
+                cooltime = float(a)
                 argv_list.remove('-w')
             except:
-                cooltime = 0.1
-                break
+                cooltime = 3.5
         if o in ('-l', '--pool'):
-            pool = a
             try:
+                pool = int(a)
                 argv_list.remove('-l')
             except:
                 pool = 0
-                break
         if o in ('-i', '--fake-ip'):
             fake_ip = True
     if aid == 0:
@@ -342,10 +295,8 @@ if __name__=='__main__':
         exit()
     if len(cookiepath) == 0:
         cookiepath = './bilicookies'
-    cookies = read_cookie(cookiepath)
-    logging.debug('Cookies: ' + cookiepath)
+    cookies = convert_cookie(read_cookie(cookiepath)[0])
+    logging.debug('Cookies: ' + str(cookiepath))
+    logging.debug(cookies)
     BILIGRAB_UA = 'srt2Bilibili / ' + str(VER) + ' (cnbeining@gmail.com)'
-    BILIGRAB_HEADER = {'User-Agent': BILIGRAB_UA, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
-    logging.debug(cookies[0])
-    main(srt, fontsize, mode, color, cookies[0], aid, part, cooltime, pool, fake_ip = fake_ip)
-
+    main(srt, fontsize, mode, color, cookies, aid, part, cooltime, pool, fake_ip = fake_ip)

@@ -3,7 +3,7 @@ srt2bilibili
 
 A batch poster of srt file to danmaku on Bilibili.
 
-Fully automatic if started.
+Fully automatic once started.
 
 Usage
 ------
@@ -16,7 +16,7 @@ The file should looks like:
 
 Command line mode:
 
-    python3 srt2bilibili.py (-h) (-a 12345678) [-p 1] [-c ./bilicookies] (-s 1.srt) [-f 18] [-m 0] [-o 16711680] [-w 0.1] [-l 0] (-i)
+    python3 srt2bilibili.py (-h) (-a 12345678) [-p 1] [-c ./bilicookies] (-s 1.srt) [-f 25] [-m 4] [-o 16777215] [-w 3.5] [-l 0] (-i)
     
     -h: Default: None
         Print this usage file.
@@ -38,7 +38,7 @@ Command line mode:
         srt2bilibili will post multi danmakues for multi-line subtitle,
         since there's a ban on the use of \n.
         
-    -f Default: 18
+    -f Default: 25
         The size of danmaku.
         
     -m Default: 4
@@ -50,11 +50,11 @@ Command line mode:
         7: Special
         9: Advanced
         
-    -o Default: 16711680
-        The colour of danmaku, in integer.
-        Default is red.
+    -o Default: 16777215
+        The color of danmaku, in integer.
+        Default is white.
         
-    -w Default: 0.1
+    -w Default: 3.5
        The cool time (time to wait between posting danmakues)
        Do not set it too small, which would lead to ban or failure.
        
@@ -68,7 +68,7 @@ Command line mode:
     -i Default: False
         Use a fake IP address for every comment.
     
-    More info avalable at http://docs.bilibili.cn/wiki/API.comment  .
+    More info available at http://docs.bilibili.cn/wiki/API.comment.
 
 
 Requirement
@@ -112,6 +112,8 @@ Misc
 
 History
 ----
+0.03: Changed default parameter values for consistency and more promising results. Introduced a new implementation of CID fetching.
+
 0.02.2 alpha: Add IP faking.
 
 0.02.1: Add error handling if requirements not met.
