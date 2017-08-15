@@ -76,11 +76,11 @@ def post_one(message, rnd, cid, cookie, fontsize = 25, mode = 4, color = 1677721
     headers = {'Origin': 'http://static.hdslb.com', 'X-Requested-With': 'ShockwaveFlash/15.0.0.223', 'Referer': 'http://static.hdslb.com/play.swf', 'User-Agent': BILIGRAB_UA, 'Host': 'interface.bilibili.com', 'Content-Type': 'application/x-www-form-urlencoded'}
     if fake_ip:
         FAKE_IP = ".".join(str(randint(1, 255)) for i in range(4))
-        headers.update({'X-Forwarded-For' : FAKE_IP, 'Client-IP' : FAKE_IP})
+        headers.update({'X-Forwarded-For': FAKE_IP, 'Client-IP': FAKE_IP})
     #print(headers)
     url = 'http://interface.bilibili.com/dmpost'
+    payload = {'fontsize': fontsize, 'message': message, 'mode': mode, 'pool': pool, 'color': color, 'date': getdate(), 'rnd': rnd, 'playTime': playTime, 'cid': cid}
     try:
-        payload = {'fontsize': fontsize, 'message': message, 'mode': mode, 'pool': pool, 'color': color, 'date': getdate(), 'rnd': rnd, 'playTime': playTime, 'cid': cid}
         r = requests.post(url, data = payload, headers = headers, cookies=cookie)
         #print(r.text)
         if int(r.text) <= 0:
@@ -128,11 +128,11 @@ def main(srt, fontsize, mode, color, cookie, aid, p = 1, cool = 3.5, pool = 0, f
         playtime = timestamp2sec(sub.start)
         message = sub.text
         if '\n' in message:
-            for line in message.split('\n'):
-                post_one(line, rnd, cid, cookie, fontsize, mode, color, playtime, pool,fake_ip = fake_ip)
+            for i, line in enumerate(message.split('\n')):
+                post_one(line, rnd, cid, cookie, fontsize, mode, color, playtime, pool, fake_ip)
                 time_old.sleep(cool)
         else:
-            post_one(message, rnd, cid, cookie, fontsize, mode, color, playtime, pool,fake_ip = fake_ip)
+            post_one(message, rnd, cid, cookie, fontsize, mode, color, playtime, pool, fake_ip)
             time_old.sleep(cool)
     print('INFO: DONE!')
 
@@ -230,62 +230,62 @@ if __name__=='__main__':
         if o in ('-h', '--help'):
             usage()
             exit()
-        if o in ('-a', '--av'):
+        elif o in ('-a', '--av'):
             aid = a
             try:
                 argv_list.remove('-a')
             except:
                 break
-        if o in ('-p', '--part'):
+        elif o in ('-p', '--part'):
             try:
                 part = int(a)
                 argv_list.remove('-p')
             except:
                 part = 1
-        if o in ('-c', '--cookie'):
+        elif o in ('-c', '--cookie'):
             cookiepath = a
             try:
                 argv_list.remove('-c')
             except:
                 print('INFO: No cookie path set, use default: ./bilicookies')
                 cookiepath = './bilicookies'
-        if o in ('-s', '--srt'):
+        elif o in ('-s', '--srt'):
             srt = a
             try:
                 argv_list.remove('-s')
             except:
                 break
-        if o in ('-f', '--fontsize'):
+        elif o in ('-f', '--fontsize'):
             try:
                 fontsize = int(a)
                 argv_list.remove('-f')
             except:
                 fontsize = 25
-        if o in ('-m', '--mode'):
+        elif o in ('-m', '--mode'):
             try:
                 mode = int(a)
                 argv_list.remove('-m')
             except:
                 mode = 4
-        if o in ('-o', '--color'):
+        elif o in ('-o', '--color'):
             try:
                 color = int(a)
                 argv_list.remove('-o')
             except:
                 color = 16777215
-        if o in ('-w', '--cooltime'):
+        elif o in ('-w', '--cooltime'):
             try:
                 cooltime = float(a)
                 argv_list.remove('-w')
             except:
                 cooltime = 3.5
-        if o in ('-l', '--pool'):
+        elif o in ('-l', '--pool'):
             try:
                 pool = int(a)
                 argv_list.remove('-l')
             except:
                 pool = 0
-        if o in ('-i', '--fake-ip'):
+        elif o in ('-i', '--fake-ip'):
             fake_ip = True
     if aid == 0:
         logging.fatal('No aid!')
