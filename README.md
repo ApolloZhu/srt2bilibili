@@ -3,6 +3,8 @@ srt2bilibili
 
 [![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
+**Please use Swift version: [github.com/ApolloZhu/Srt2BilibiliKit](https://github.com/ApolloZhu/Srt2BilibiliKit) instead.**
+
 A batch poster of srt file to danmaku on Bilibili.
 
 Fully automatic once started.
