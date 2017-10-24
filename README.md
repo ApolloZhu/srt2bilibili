@@ -1,6 +1,8 @@
 srt2bilibili
 ============
 
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 A batch poster of srt file to danmaku on Bilibili.
 
 Fully automatic once started.
